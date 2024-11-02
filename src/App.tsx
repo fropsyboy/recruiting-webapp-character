@@ -108,7 +108,11 @@ function App() {
       const skillTotal = activeCharacter.skillPoints[selectedSkill] + attributeModifier;
       const roll = Math.floor(Math.random() * 20) + 1;
       setRollResult(roll);
-      setSkillCheckResult((roll + skillTotal) >= dc ? 'Success' : 'Failure');
+      // setSkillCheckResult((roll + skillTotal) >= dc ? 'Success' : 'Failure');
+
+      // Setting the detailed result message
+    const resultMessage = `Skill: ${selectedSkill}, You Rolled: ${roll}, DC: ${dc}, Result: ${roll + skillTotal >= dc ? 'Success' : 'Failure'}`;
+    setSkillCheckResult(resultMessage);
     }
   };
 
