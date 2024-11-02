@@ -17,64 +17,70 @@ function App() {
 
   const [attributes, setAttributes] = useState<Attributes>(initialAttributes);
   const maxAttributeTotal = 70;
-
-   // Calculate attribute modifier
-   const calculateModifier = (value: number): number => Math.floor((value - 10) / 2);
-
-   // Calculate total of all attributes
-   const totalAttributes = Object.values(attributes).reduce((acc, value) => acc + value, 0);
- 
-   // Handle increment and decrement of attributes
-   const updateAttribute = (key: keyof Attributes, increment: boolean) => {
-     setAttributes(prevAttributes => {
-       const newValue = increment ? prevAttributes[key] + 1 : prevAttributes[key] - 1;
- 
-       // Ensure the new total does not exceed the maximum allowed
-       if (totalAttributes + (increment ? 1 : -1) > maxAttributeTotal || newValue < 0) {
-        alert('Total attribute points cannot exceed 70.');
-         return prevAttributes;
-       }
- 
-       return { ...prevAttributes, [key]: newValue };
-     });
-   };
-
-     // State for selected class
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
-
-  // State for skill points
   const [skillPoints, setSkillPoints] = useState<{ [key: string]: number }>(
     Object.fromEntries(SKILL_LIST.map(skill => [skill.name, 0]))
   );
+  const [selectedSkill, setSelectedSkill] = useState<string>(SKILL_LIST[0].name);
+  const [dc, setDC] = useState<number>(10);
+  const [rollResult, setRollResult] = useState<number | null>(null);
+  const [skillCheckResult, setSkillCheckResult] = useState<string | null>(null);
+  const [partyCheckResult, setPartyCheckResult] = useState<string | null>(null);
 
-  // Check if character meets requirements for a class
+  const calculateModifier = (value: number): number => Math.floor((value - 10) / 2);
+  const totalAttributes = Object.values(attributes).reduce((acc, value) => acc + value, 0);
+  
+  const updateAttribute = (key: keyof Attributes, increment: boolean) => {
+    setAttributes(prevAttributes => {
+      const newValue = increment ? prevAttributes[key] + 1 : prevAttributes[key] - 1;
+      if (totalAttributes + (increment ? 1 : -1) > maxAttributeTotal || newValue < 0) {
+        return prevAttributes;
+      }
+      return { ...prevAttributes, [key]: newValue };
+    });
+  };
+
   const qualifiesForClass = (className: string): boolean => {
     const requirements = CLASS_LIST[className];
     return ATTRIBUTE_LIST.every(attribute => attributes[attribute as keyof Attributes] >= requirements[attribute as keyof Attributes]);
   };
 
-  // Handle selecting a class
-  const handleClassSelection = (className: string) => {
-    setSelectedClass(className);
-  };
+  const handleClassSelection = (className: string) => setSelectedClass(className);
 
-  // Calculate available skill points based on Intelligence modifier
   const intelligenceModifier = calculateModifier(attributes.Intelligence);
   const maxSkillPoints = 10 + (4 * intelligenceModifier);
   const totalSkillPointsUsed = Object.values(skillPoints).reduce((acc, value) => acc + value, 0);
 
-  // Update skill points for a specific skill
   const updateSkillPoints = (skillName: string, increment: boolean) => {
     setSkillPoints(prevSkillPoints => {
       const currentPoints = prevSkillPoints[skillName];
       const newPoints = increment ? currentPoints + 1 : currentPoints - 1;
-
       if (newPoints < 0 || totalSkillPointsUsed + (increment ? 1 : -1) > maxSkillPoints) {
         return prevSkillPoints;
       }
-
       return { ...prevSkillPoints, [skillName]: newPoints };
     });
+  };
+
+  const performSkillCheck = () => {
+    const skill = SKILL_LIST.find(skill => skill.name === selectedSkill);
+    if (skill) {
+      const attributeModifier = calculateModifier(attributes[skill.attributeModifier as keyof Attributes]);
+      const skillTotal = skillPoints[selectedSkill] + attributeModifier;
+      const roll = Math.floor(Math.random() * 20) + 1;
+      setRollResult(roll);
+      setSkillCheckResult((roll + skillTotal) >= dc ? 'Success' : 'Failure');
+    }
+  };
+
+  const performPartySkillCheck = () => {
+    const skill = SKILL_LIST.find(skill => skill.name === selectedSkill);
+    if (skill) {
+      const attributeModifier = calculateModifier(attributes[skill.attributeModifier as keyof Attributes]);
+      const skillTotal = skillPoints[selectedSkill] + attributeModifier;
+      const roll = Math.floor(Math.random() * 20) + 1;
+      setPartyCheckResult((roll + skillTotal) >= dc ? `Success by highest skill character` : `Failure by highest skill character`);
+    }
   };
 
 
@@ -120,6 +126,7 @@ function App() {
           </div>
         )}
       </section>
+
       <section className="skills-section">
         <h2>Skills</h2>
         <div>Available Skill Points: {maxSkillPoints - totalSkillPointsUsed} / {maxSkillPoints}</div>
@@ -137,6 +144,39 @@ function App() {
             </div>
           );
         })}
+      </section>
+
+      <section className="skill-check-section">
+        <h2>Skill Check</h2>
+        <label>
+          Skill:
+          <select value={selectedSkill} onChange={(e) => setSelectedSkill(e.target.value)}>
+            {SKILL_LIST.map(skill => (
+              <option key={skill.name} value={skill.name}>{skill.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          DC:
+          <input type="number" value={dc} onChange={(e) => setDC(Number(e.target.value))} />
+        </label>
+        <button onClick={performSkillCheck}>Roll</button>
+        {rollResult !== null && (
+          <div>
+            <p>Roll: {rollResult}</p>
+            <p>Result: {skillCheckResult}</p>
+          </div>
+        )}
+      </section>
+
+      <section className="party-skill-check-section">
+        <h2>Party Skill Check</h2>
+        <button onClick={performPartySkillCheck}>Roll for Party</button>
+        {partyCheckResult && (
+          <div>
+            <p>Party Check Result: {partyCheckResult}</p>
+          </div>
+        )}
       </section>
     </div>
   );
