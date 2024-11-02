@@ -3,8 +3,6 @@ import './App.css';
 import { ATTRIBUTE_LIST, CLASS_LIST, SKILL_LIST } from './consts';
 import type { Attributes } from './types';
 
-
-
 function App() {
   const initialAttributes: Attributes = {
     Strength: 10,
@@ -29,11 +27,12 @@ function App() {
 
   const calculateModifier = (value: number): number => Math.floor((value - 10) / 2);
   const totalAttributes = Object.values(attributes).reduce((acc, value) => acc + value, 0);
-  
+
   const updateAttribute = (key: keyof Attributes, increment: boolean) => {
     setAttributes(prevAttributes => {
       const newValue = increment ? prevAttributes[key] + 1 : prevAttributes[key] - 1;
       if (totalAttributes + (increment ? 1 : -1) > maxAttributeTotal || newValue < 0) {
+        alert('Total attribute points cannot exceed 70.');
         return prevAttributes;
       }
       return { ...prevAttributes, [key]: newValue };
@@ -42,7 +41,9 @@ function App() {
 
   const qualifiesForClass = (className: string): boolean => {
     const requirements = CLASS_LIST[className];
-    return ATTRIBUTE_LIST.every(attribute => attributes[attribute as keyof Attributes] >= requirements[attribute as keyof Attributes]);
+    return ATTRIBUTE_LIST.every(
+      attribute => attributes[attribute as keyof Attributes] >= requirements[attribute as keyof Attributes]
+    );
   };
 
   const handleClassSelection = (className: string) => setSelectedClass(className);
@@ -55,9 +56,13 @@ function App() {
     setSkillPoints(prevSkillPoints => {
       const currentPoints = prevSkillPoints[skillName];
       const newPoints = increment ? currentPoints + 1 : currentPoints - 1;
-      if (newPoints < 0 || totalSkillPointsUsed + (increment ? 1 : -1) > maxSkillPoints) {
+      if (newPoints < 0) {
         return prevSkillPoints;
-      }
+    }
+    if (totalSkillPointsUsed + (increment ? 1 : -1) > maxSkillPoints) {
+        alert('Maximum skill points allocated!');
+        return prevSkillPoints;
+    }
       return { ...prevSkillPoints, [skillName]: newPoints };
     });
   };
@@ -79,20 +84,18 @@ function App() {
       const attributeModifier = calculateModifier(attributes[skill.attributeModifier as keyof Attributes]);
       const skillTotal = skillPoints[selectedSkill] + attributeModifier;
       const roll = Math.floor(Math.random() * 20) + 1;
-      setPartyCheckResult((roll + skillTotal) >= dc ? `Success by highest skill character` : `Failure by highest skill character`);
+      setPartyCheckResult((roll + skillTotal) >= dc ? 'Success by highest skill character' : 'Failure by highest skill character');
     }
   };
 
-
-  const [num, setNum] = useState<number>(0);
   return (
     <div className="App">
       <header className="App-header">
         <h1>React Coding Exercise</h1>
       </header>
-      <section className="App-section">
-        <div>
-           {ATTRIBUTE_LIST.map(attribute => (
+
+      <section className="attributes-section">
+        {ATTRIBUTE_LIST.map(attribute => (
           <div key={attribute} className="attribute-row">
             <span>{attribute}</span>
             <button onClick={() => updateAttribute(attribute as keyof Attributes, true)}>+</button>
@@ -102,8 +105,8 @@ function App() {
           </div>
         ))}
         <div>Total Attributes: {totalAttributes} / {maxAttributeTotal}</div>
-        </div>
       </section>
+
       <section className="class-section">
         <h2>Classes</h2>
         {Object.keys(CLASS_LIST).map(className => (
@@ -117,7 +120,7 @@ function App() {
         ))}
         {selectedClass && (
           <div className="class-requirements">
-            <h3>Requirements for {selectedClass}</h3>
+            <h3>Requirements for {selectedClass} <button onClick={() => setSelectedClass(null)} style={{ marginLeft: '10px', padding: '2px 5px' }}>Close</button></h3>
             <ul>
               {Object.entries(CLASS_LIST[selectedClass]).map(([attribute, value]) => (
                 <li key={attribute}><>{attribute}: {value}</></li>
