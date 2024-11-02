@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import { ATTRIBUTE_LIST, CLASS_LIST, SKILL_LIST } from './consts';
 import type { Attributes } from './types';
+
+// hardcoded my username
+const GITHUB_USERNAME = 'fropsyboy';
+const API_URL = `https://recruiting.verylongdomaintotestwith.ca/api/${GITHUB_USERNAME}/character`;
+
 
 function App() {
   const initialAttributes: Attributes = {
@@ -22,6 +27,45 @@ function App() {
 
   const [characters, setCharacters] = useState([createNewCharacter(0)]);
   const [activeCharacterIndex, setActiveCharacterIndex] = useState(0);
+
+
+// P.S: there is a CORS issue currently accessing the url
+  const saveCharacters = async () => {
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ characters }),
+      });
+      console.log('Characters saved successfully');
+    } catch (error) {
+      console.error('Error saving characters:', error);
+    }
+  };
+
+
+  const loadCharacters = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      if (data.characters) {
+        setCharacters(data.characters);
+        setActiveCharacterIndex(0);
+      }
+      console.log('Characters loaded successfully');
+    } catch (error) {
+      console.error('Error loading characters:', error);
+    }
+  };
+
+
+  useEffect(() => {
+    loadCharacters();
+  }, []);
+
+
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<string>(SKILL_LIST[0].name);
   const [dc, setDC] = useState<number>(10);
@@ -108,7 +152,11 @@ function App() {
       const skillTotal = activeCharacter.skillPoints[selectedSkill] + attributeModifier;
       const roll = Math.floor(Math.random() * 20) + 1;
       setRollResult(roll);
-      setSkillCheckResult((roll + skillTotal) >= dc ? 'Success' : 'Failure');
+      // setSkillCheckResult((roll + skillTotal) >= dc ? 'Success' : 'Failure');
+
+      // Setting the detailed result message
+    const resultMessage = `Skill: ${selectedSkill}, You Rolled: ${roll}, DC: ${dc}, Result: ${roll + skillTotal >= dc ? 'Success' : 'Failure'}`;
+    setSkillCheckResult(resultMessage);
     }
   };
 
@@ -151,7 +199,7 @@ function App() {
             <span>Modifier: {calculateModifier(activeCharacter.attributes[attribute as keyof Attributes])}</span>
           </div>
         ))}
-        <div>Total Attributes: {'${totalAttributes}'} / 70</div>
+        <div>Total Attributes: {totalAttributes} / 70</div>
       </section>
 
       <section className="class-section">
@@ -230,6 +278,7 @@ function App() {
           </div>
         )}
       </section>
+      <button onClick={saveCharacters}>Save Characters</button>
     </div>
   );
 }
